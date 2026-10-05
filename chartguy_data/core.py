@@ -166,15 +166,22 @@ class CGData:
 
     def nfp_times(self, start: DateLike, end: DateLike) -> List[Tuple[datetime, str]]:
         """NFP release times: calendar where available, first-Friday rule for the rest."""
-        cal = self.event_times(["payroll"], start, end, region="US", exclude=("adp", "private"))
+        cal = self.event_times(["payroll"], start, end, region="US",
+                               exclude=("adp", "private", "benchmark", "revision"))
         cal_months = {(t.year, t.month) for t, _ in cal}
-        rule = [(t, "first-Friday rule") for t in first_friday_nfp(start, end)
+        all_rule = first_friday_nfp(start, end)
+        # When the calendar covers most months, trust it completely: a missing
+        # month is real (e.g. the Oct 2025 report that never came out during
+        # the US government shutdown), and the first-Friday rule would invent it.
+        if all_rule and len(cal_months) >= 0.8 * len(all_rule):
+            return sorted(cal)
+        rule = [(t, "first-Friday rule") for t in all_rule
                 if (t.year, t.month) not in cal_months]
         return sorted(cal + rule)
 
     def event_study(self, symbol: str, events: Iterable[Tuple[datetime, str]] | Iterable[datetime],
                     timeframe: str = "5m", pre_minutes: int = 120, session_close_utc: int = 21,
-                    pip: Optional[float] = None) -> Result:
+                    pip: Optional[float] = None, big_move: float = 10.0) -> Result:
         """How `symbol` moved around each event time.
 
         For every event: move after 5/15/60 minutes, first-hour range, move and
@@ -233,6 +240,8 @@ class CGData:
             abs5 = [abs(r["move_5m"]) for r in rows]
             rng = [r["range_60m"] for r in rows]
             rev = sum(1 for r in rows if r["first5_reversed"])
+            big = [r for r in rows if abs(r["move_5m"]) >= big_move]
+            big_rev = sum(1 for r in big if r["first5_reversed"])
             summary.update({
                 "period": f"{rows[0]['release_utc']:%Y-%m-%d} -> {rows[-1]['release_utc']:%Y-%m-%d}",
                 "first_5m_move_median": round(median(abs5), 1),
@@ -240,6 +249,9 @@ class CGData:
                 "first_hour_range_median": round(median(rng), 1),
                 "first_hour_range_max": round(max(rng), 1),
                 "first5_reversed_by_close": f"{rev} of {n} ({100 * rev / n:.0f}%)",
+                "big_first_move": f"5m move >= {big_move:g}",
+                "big_first_move_reversed": f"{big_rev} of {len(big)}"
+                                           + (f" ({100 * big_rev / len(big):.0f}%)" if big else ""),
             })
         return Result(rows, summary, warnings)
 
