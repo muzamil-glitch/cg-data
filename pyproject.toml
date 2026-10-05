@@ -1,51 +1,25 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "lse-data"
-version = "0.14.0"
-description = "Python client for London Strategic Edge market data: live streaming, deep vault history as Parquet, economics series, options chains and flow"
+name = "cg-data"
+version = "0.1.0"
+description = "Chart Guy data tools: a careful layer over lse-data with inclusive dates, no Sunday candles and event studies with sample sizes."
 readme = "README.md"
-license = "MIT"
-requires-python = ">=3.8"
-authors = [
-    { name = "London Strategic Edge", email = "support@londonstrategicedge.com" },
-]
-keywords = ["trading", "market data", "websocket", "stocks", "crypto", "forex", "options", "realtime"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Financial and Insurance Industry",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Office/Business :: Financial :: Investment",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
-dependencies = [
-    "websockets>=11.0",
-]
+license = { text = "MIT" }
+authors = [{ name = "Muzamil (Chart Guy / LIARG Analyst)" }]
+requires-python = ">=3.9"
+dependencies = ["lse-data>=0.14"]
 
 [project.optional-dependencies]
-# DataFrame return path for vault pulls: history()/dataset() hand back pandas
-# DataFrames when these are present; without them the Parquet file path returns.
-frames = ["pyarrow>=14", "pandas>=1.5"]
+pandas = ["pandas"]
 
 [project.scripts]
-lse = "lse.cli:main"
-
-[tool.hatch.build.targets.wheel]
-packages = ["lse"]
+cgdata = "chartguy_data.cli:main"
 
 [project.urls]
-Homepage = "https://londonstrategicedge.com"
-Documentation = "https://github.com/londonstrategicedge/lse-data"
-Repository = "https://github.com/londonstrategicedge/lse-data"
-Issues = "https://github.com/londonstrategicedge/lse-data/issues"
-Terms = "https://londonstrategicedge.com/terms"
+Repository = "https://github.com/muzamil-glitch/cg-data"
+
+[tool.setuptools]
+packages = ["chartguy_data"]
